@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}跨厂对照台{% endblock %}
+{% block content %}
+<header class="page-head">
+  <div>
+    <h1>跨厂对照台</h1>
+    <p>各厂池座按状态实时汇总，数字与平面图瓦片同源。本页只读，禁止改态；如需改态请前往平面图抽屉操作。</p>
+  </div>
+</header>
+
+<table class="data-table crosscheck-table" aria-label="跨厂池座状态对照">
+  <thead>
+    <tr>
+      <th scope="col">厂区</th>
+      <th scope="col" class="num">池座数</th>
+      <th scope="col" class="num"><span class="badge badge-filling">注水中</span></th>
+      <th scope="col" class="num"><span class="badge badge-slaking">熟化中</span></th>
+      <th scope="col" class="num"><span class="badge badge-drawn">已出灰</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for plant, counts in rows %}
+    <tr>
+      <td>
+        <a href="{{ url_for('board.floor_plan', plant_id=plant.id) }}">{{ plant.name }}</a>
+        {% if plant.location %}<small class="row-sub">{{ plant.location }}</small>{% endif %}
+      </td>
+      <td class="num strong">{{ counts.total }}</td>
+      <td class="num">{{ counts['filling'] }}</td>
+      <td class="num">{{ counts['slaking'] }}</td>
+      <td class="num">{{ counts['drawn'] }}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5">暂无厂区</td></tr>
+    {% endfor %}
+  </tbody>
+  <tfoot>
+    <tr>
+      <td class="strong">全部厂合计</td>
+      <td class="num strong">{{ totals.total }}</td>
+      <td class="num">{{ totals['filling'] }}</td>
+      <td class="num">{{ totals['slaking'] }}</td>
+      <td class="num">{{ totals['drawn'] }}</td>
+    </tr>
+  </tfoot>
+</table>
+
+<p class="hint crosscheck-note">
+  核对式：注水中 {{ totals['filling'] }} ＋ 熟化中 {{ totals['slaking'] }} ＋ 已出灰 {{ totals['drawn'] }}
+  ＝ 池座数 {{ totals.total }}。每次打开本页都从池座台账实时统计，平面图抽屉改态后无需同步。
+</p>
+{% endblock %}

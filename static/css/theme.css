@@ -425,3 +425,15 @@ button:hover, .btn:hover { background: #1e293b; }
   .floor-head { flex-direction: column; }
   .pond-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* 跨厂只读对照台 */
+.crosscheck-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.crosscheck-table td.strong,
+.crosscheck-table th.num { font-weight: 700; }
+.crosscheck-table tfoot td {
+  background: #e2e8f0;
+  font-weight: 700;
+  border-top: 2px solid var(--border);
+}
+.crosscheck-table .row-sub { display: block; color: var(--muted); font-weight: 400; font-size: 0.82rem; }
+.crosscheck-note { margin-top: 14px; }

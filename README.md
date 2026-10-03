@@ -23,13 +23,14 @@
 | `admin` | `123456` | 管理员 |
 | `worker` | `123456` | 操作工 |
 
-登录页已预填 `admin` / `123456`。启动时 entrypoint 会建表并写入种子数据（示范厂区：**东湾石灰厂**）。
+登录页已预填 `admin` / `123456`。启动时 entrypoint 会建表并写入种子数据（示范厂区：**东湾石灰厂**、**西岭石灰厂**；种子幂等，旧库重启会自动补齐缺失的第二座厂）。
 
 ## 主界面
 
 - **熟化池平面图**（`/board/`）：CSS 网格池位瓦片，按状态着色（注水中 / 熟化中 / 已出灰）
 - 顶部厂区切换芯片（多厂时切换）
 - 点击瓦片 → 右侧抽屉展示最近 `SlakeBatch`，可登记峰值温度并变更池状态
+- **跨厂对照台**（`/crosscheck/`，顶栏「跨厂对照」）：只读列出全部厂的池座数 / 注水中 / 熟化中 / 已出灰及合计。数字不另存，每次请求直接对 `ponds` 表按状态聚合，与平面图瓦片同源；抽屉改态后打开即一致。该页仅挂 GET（写方法返回 405），无任何表单或改态控件
 - 主导航不再挂「熟化池列表 / 批次列表」；旧 `/ponds/`、`/batches/` 路由仍保留但不作为作业入口
 
 ## 业务规则
@@ -65,8 +66,19 @@ LimeSlake-01/
 │   ├── __init__.py          # 工厂 + seed
 │   ├── models.py
 │   ├── services/rules.py
-│   └── blueprints/{auth,board,ponds,batches}
+│   └── blueprints/{auth,board,crosscheck,ponds,batches}
 ├── templates/
-│   └── board/floor.html     # 平面图 + 抽屉
+│   ├── board/floor.html     # 平面图 + 抽屉
+│   └── crosscheck/overview.html  # 跨厂只读对照台
+├── tests/                   # pytest（SQLite 内存式临时库，无需 Postgres）
 └── static/
 ```
+
+## 测试
+
+```bash
+pip install -r requirements-dev.txt
+pytest -q
+```
+
+测试覆盖：种子两厂、对照台数字与平面图瓦片点数及库计数三方一致、抽屉改态后合计与库差为 0、对照台只读（POST/PUT/PATCH/DELETE → 405、无表单控件）、未登录跳转、两线程在不同厂同时改入熟化中后仍对齐。

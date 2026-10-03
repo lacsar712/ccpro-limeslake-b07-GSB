@@ -30,10 +30,12 @@ def create_app() -> Flask:
     from app.blueprints.auth import bp as auth_bp
     from app.blueprints.board import bp as board_bp
     from app.blueprints.batches import bp as batches_bp
+    from app.blueprints.crosscheck import bp as crosscheck_bp
     from app.blueprints.ponds import bp as ponds_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(board_bp)
+    app.register_blueprint(crosscheck_bp)
     app.register_blueprint(ponds_bp)
     app.register_blueprint(batches_bp)
 
@@ -72,68 +74,69 @@ def seed_demo_data() -> None:
         worker.set_password("123456")
         worker.role = "worker"
 
-    if Plant.query.first():
+    # 种子幂等：已有厂区保留不动，缺哪座厂补哪座（旧库重启也能拿到第二座厂）。
+    plant = Plant.query.filter_by(name="东湾石灰厂").first()
+    plant2 = Plant.query.filter_by(name="西岭石灰厂").first()
+    new_ponds = []
+
+    if plant is None:
+        plant = Plant(name="东湾石灰厂", location="江北码头侧", notes="熟化池示范厂区")
+        db.session.add(plant)
+        db.session.flush()
+        pid = plant.id
+        new_ponds += [
+            Pond(plant_id=pid, code="P-01", status=Pond.STATUS_SLAKING, capacity_m3=48.0),
+            Pond(plant_id=pid, code="P-02", status=Pond.STATUS_FILLING, capacity_m3=36.0),
+            Pond(plant_id=pid, code="P-03", status=Pond.STATUS_DRAWN, capacity_m3=40.0),
+            Pond(plant_id=pid, code="P-04", status=Pond.STATUS_SLAKING, capacity_m3=42.0),
+            Pond(plant_id=pid, code="P-05", status=Pond.STATUS_FILLING, capacity_m3=38.0),
+            Pond(plant_id=pid, code="P-06", status=Pond.STATUS_DRAWN, capacity_m3=44.0),
+        ]
+
+    if plant2 is None:
+        plant2 = Plant(name="西岭石灰厂", location="西岭矿山东侧", notes="第二座示范厂区")
+        db.session.add(plant2)
+        db.session.flush()
+        pid2 = plant2.id
+        new_ponds += [
+            Pond(plant_id=pid2, code="X-01", status=Pond.STATUS_FILLING, capacity_m3=35.0),
+            Pond(plant_id=pid2, code="X-02", status=Pond.STATUS_SLAKING, capacity_m3=46.0),
+            Pond(plant_id=pid2, code="X-03", status=Pond.STATUS_DRAWN, capacity_m3=41.0),
+            Pond(plant_id=pid2, code="X-04", status=Pond.STATUS_SLAKING, capacity_m3=49.0),
+        ]
+
+    if not new_ponds:
         db.session.commit()
         return
 
-    plant = Plant(name="东湾石灰厂", location="江北码头侧", notes="熟化池示范厂区")
-    db.session.add(plant)
+    db.session.add_all(new_ponds)
     db.session.flush()
-
-    p1 = Pond(plant=plant, code="P-01", status=Pond.STATUS_SLAKING, capacity_m3=48.0)
-    p2 = Pond(plant=plant, code="P-02", status=Pond.STATUS_FILLING, capacity_m3=36.0)
-    p3 = Pond(plant=plant, code="P-03", status=Pond.STATUS_DRAWN, capacity_m3=40.0)
-    p4 = Pond(plant=plant, code="P-04", status=Pond.STATUS_SLAKING, capacity_m3=42.0)
-    p5 = Pond(plant=plant, code="P-05", status=Pond.STATUS_FILLING, capacity_m3=38.0)
-    p6 = Pond(plant=plant, code="P-06", status=Pond.STATUS_DRAWN, capacity_m3=44.0)
-    db.session.add_all([p1, p2, p3, p4, p5, p6])
-    db.session.flush()
+    ponds_by_code = {pond.code: pond for pond in new_ponds}
 
     now = utcnow()
+    batch_specs = [
+        ("P-01", timedelta(hours=6), 85.0, 72.0, "峰值已过，可出灰"),
+        ("P-02", timedelta(hours=2), 80.0, None, "注水中，尚未测得峰值"),
+        ("P-03", timedelta(days=1), 82.0, 91.0, "已出灰批次"),
+        ("P-04", timedelta(hours=9), 84.0, 66.0, "熟化中段"),
+        ("P-05", timedelta(hours=1), 80.0, None, "刚开池注水"),
+        ("P-06", timedelta(days=2), 83.0, 88.0, "东侧池已出灰"),
+        ("X-01", timedelta(minutes=40), 80.0, None, "西岭厂刚注水"),
+        ("X-02", timedelta(hours=5), 82.0, 68.0, "熟化中"),
+        ("X-03", timedelta(days=1, hours=4), 83.0, 90.0, "已出灰"),
+        ("X-04", timedelta(hours=8), 84.0, 64.0, "熟化中"),
+    ]
     db.session.add_all(
         [
             SlakeBatch(
-                pond=p1,
-                started_at=now - timedelta(hours=6),
-                target_temp_c=85.0,
-                peak_temp_c=72.0,
-                notes="峰值已过，可出灰",
-            ),
-            SlakeBatch(
-                pond=p2,
-                started_at=now - timedelta(hours=2),
-                target_temp_c=80.0,
-                peak_temp_c=None,
-                notes="注水中，尚未测得峰值",
-            ),
-            SlakeBatch(
-                pond=p3,
-                started_at=now - timedelta(days=1),
-                target_temp_c=82.0,
-                peak_temp_c=91.0,
-                notes="已出灰批次",
-            ),
-            SlakeBatch(
-                pond=p4,
-                started_at=now - timedelta(hours=9),
-                target_temp_c=84.0,
-                peak_temp_c=66.0,
-                notes="熟化中段",
-            ),
-            SlakeBatch(
-                pond=p5,
-                started_at=now - timedelta(hours=1),
-                target_temp_c=80.0,
-                peak_temp_c=None,
-                notes="刚开池注水",
-            ),
-            SlakeBatch(
-                pond=p6,
-                started_at=now - timedelta(days=2),
-                target_temp_c=83.0,
-                peak_temp_c=88.0,
-                notes="东侧池已出灰",
-            ),
+                pond=ponds_by_code[code],
+                started_at=now - offset,
+                target_temp_c=target,
+                peak_temp_c=peak,
+                notes=note,
+            )
+            for code, offset, target, peak, note in batch_specs
+            if code in ponds_by_code
         ]
     )
     db.session.commit()
