@@ -19,7 +19,8 @@
         </div>
       </div>
       <nav class="top-nav">
-        <a href="{{ url_for('board.floor_plan') }}" class="{% if request.blueprint == 'board' %}active{% endif %}">平面图</a>
+        <a href="{{ url_for('board.floor_plan') }}" class="{% if request.endpoint == 'board.floor_plan' %}active{% endif %}">平面图</a>
+        <a href="{{ url_for('board.compare') }}" class="{% if request.endpoint == 'board.compare' %}active{% endif %}">跨厂对照</a>
         <a href="{{ url_for('auth.logout') }}">退出</a>
       </nav>
     </header>

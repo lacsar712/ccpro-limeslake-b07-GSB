@@ -1,5 +1,6 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import login_required
+from sqlalchemy import case, func
 
 from app.extensions import db
 from app.models import Plant, Pond
@@ -53,6 +54,49 @@ def floor_plan():
         pond_cards=pond_cards,
         selected=selected,
         selected_batch=selected_batch,
+        status_labels=STATUS_LABELS,
+    )
+
+
+@bp.route("/compare")
+@login_required
+def compare():
+    """跨厂只读对照台：全部厂区的池座/熟化中/已出灰座数。
+
+    单条 GROUP BY 聚合查询，实时取库内已提交状态，不做任何缓存或写操作，
+    因此平面图抽屉改态提交后，本页三类合计始终与库内一致。
+    """
+    rows = (
+        db.session.query(
+            Plant.id,
+            Plant.name,
+            Plant.location,
+            func.count(Pond.id).label("total"),
+            func.coalesce(
+                func.sum(case((Pond.status == Pond.STATUS_FILLING, 1), else_=0)), 0
+            ).label("filling"),
+            func.coalesce(
+                func.sum(case((Pond.status == Pond.STATUS_SLAKING, 1), else_=0)), 0
+            ).label("slaking"),
+            func.coalesce(
+                func.sum(case((Pond.status == Pond.STATUS_DRAWN, 1), else_=0)), 0
+            ).label("drawn"),
+        )
+        .outerjoin(Pond, Pond.plant_id == Plant.id)
+        .group_by(Plant.id, Plant.name, Plant.location)
+        .order_by(Plant.name)
+        .all()
+    )
+    totals = {
+        "total": sum(row.total for row in rows),
+        "filling": sum(row.filling for row in rows),
+        "slaking": sum(row.slaking for row in rows),
+        "drawn": sum(row.drawn for row in rows),
+    }
+    return render_template(
+        "board/compare.html",
+        rows=rows,
+        totals=totals,
         status_labels=STATUS_LABELS,
     )
 

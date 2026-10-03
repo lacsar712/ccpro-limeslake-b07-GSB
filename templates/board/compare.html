@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}跨厂对照台{% endblock %}
+{% block content %}
+<section class="compare-page">
+  <header class="floor-head">
+    <div>
+      <h1>跨厂对照台</h1>
+      <p>全部厂区池座状态汇总，实时取库内数据；本页只读，改态请回平面图抽屉操作。</p>
+    </div>
+    <div class="legend">
+      <span class="leg-item filling">注水中</span>
+      <span class="leg-item slaking">熟化中</span>
+      <span class="leg-item drawn">已出灰</span>
+    </div>
+  </header>
+
+  <table class="data-table compare-table">
+    <thead>
+      <tr>
+        <th>厂区</th>
+        <th>位置</th>
+        <th>池座数</th>
+        <th>{{ status_labels['filling'] }}</th>
+        <th>{{ status_labels['slaking'] }}</th>
+        <th>{{ status_labels['drawn'] }}</th>
+        <th>平面图</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr>
+        <td><strong>{{ row.name }}</strong></td>
+        <td>{{ row.location or '—' }}</td>
+        <td class="num">{{ row.total }}</td>
+        <td class="num"><span class="badge badge-filling">{{ row.filling }}</span></td>
+        <td class="num"><span class="badge badge-slaking">{{ row.slaking }}</span></td>
+        <td class="num"><span class="badge badge-drawn">{{ row.drawn }}</span></td>
+        <td><a href="{{ url_for('board.floor_plan', plant_id=row.id) }}">查看平面图</a></td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="7">尚无厂区数据</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr class="compare-total">
+        <td colspan="2">全部厂区合计</td>
+        <td class="num">{{ totals.total }}</td>
+        <td class="num">{{ totals.filling }}</td>
+        <td class="num">{{ totals.slaking }}</td>
+        <td class="num">{{ totals.drawn }}</td>
+        <td></td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <p class="hint">对照台为只读视图，不提供任何改态入口；三类合计随平面图抽屉改态即时与库内对齐。</p>
+</section>
+{% endblock %}

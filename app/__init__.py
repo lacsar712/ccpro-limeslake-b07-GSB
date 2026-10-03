@@ -72,68 +72,120 @@ def seed_demo_data() -> None:
         worker.set_password("123456")
         worker.role = "worker"
 
-    if Plant.query.first():
-        db.session.commit()
-        return
+    if Plant.query.filter_by(name="东湾石灰厂").first() is None:
+        plant = Plant(name="东湾石灰厂", location="江北码头侧", notes="熟化池示范厂区")
+        db.session.add(plant)
+        db.session.flush()
 
-    plant = Plant(name="东湾石灰厂", location="江北码头侧", notes="熟化池示范厂区")
-    db.session.add(plant)
-    db.session.flush()
+        p1 = Pond(plant=plant, code="P-01", status=Pond.STATUS_SLAKING, capacity_m3=48.0)
+        p2 = Pond(plant=plant, code="P-02", status=Pond.STATUS_FILLING, capacity_m3=36.0)
+        p3 = Pond(plant=plant, code="P-03", status=Pond.STATUS_DRAWN, capacity_m3=40.0)
+        p4 = Pond(plant=plant, code="P-04", status=Pond.STATUS_SLAKING, capacity_m3=42.0)
+        p5 = Pond(plant=plant, code="P-05", status=Pond.STATUS_FILLING, capacity_m3=38.0)
+        p6 = Pond(plant=plant, code="P-06", status=Pond.STATUS_DRAWN, capacity_m3=44.0)
+        db.session.add_all([p1, p2, p3, p4, p5, p6])
+        db.session.flush()
 
-    p1 = Pond(plant=plant, code="P-01", status=Pond.STATUS_SLAKING, capacity_m3=48.0)
-    p2 = Pond(plant=plant, code="P-02", status=Pond.STATUS_FILLING, capacity_m3=36.0)
-    p3 = Pond(plant=plant, code="P-03", status=Pond.STATUS_DRAWN, capacity_m3=40.0)
-    p4 = Pond(plant=plant, code="P-04", status=Pond.STATUS_SLAKING, capacity_m3=42.0)
-    p5 = Pond(plant=plant, code="P-05", status=Pond.STATUS_FILLING, capacity_m3=38.0)
-    p6 = Pond(plant=plant, code="P-06", status=Pond.STATUS_DRAWN, capacity_m3=44.0)
-    db.session.add_all([p1, p2, p3, p4, p5, p6])
-    db.session.flush()
+        now = utcnow()
+        db.session.add_all(
+            [
+                SlakeBatch(
+                    pond=p1,
+                    started_at=now - timedelta(hours=6),
+                    target_temp_c=85.0,
+                    peak_temp_c=72.0,
+                    notes="峰值已过，可出灰",
+                ),
+                SlakeBatch(
+                    pond=p2,
+                    started_at=now - timedelta(hours=2),
+                    target_temp_c=80.0,
+                    peak_temp_c=None,
+                    notes="注水中，尚未测得峰值",
+                ),
+                SlakeBatch(
+                    pond=p3,
+                    started_at=now - timedelta(days=1),
+                    target_temp_c=82.0,
+                    peak_temp_c=91.0,
+                    notes="已出灰批次",
+                ),
+                SlakeBatch(
+                    pond=p4,
+                    started_at=now - timedelta(hours=9),
+                    target_temp_c=84.0,
+                    peak_temp_c=66.0,
+                    notes="熟化中段",
+                ),
+                SlakeBatch(
+                    pond=p5,
+                    started_at=now - timedelta(hours=1),
+                    target_temp_c=80.0,
+                    peak_temp_c=None,
+                    notes="刚开池注水",
+                ),
+                SlakeBatch(
+                    pond=p6,
+                    started_at=now - timedelta(days=2),
+                    target_temp_c=83.0,
+                    peak_temp_c=88.0,
+                    notes="东侧池已出灰",
+                ),
+            ]
+        )
 
-    now = utcnow()
-    db.session.add_all(
-        [
-            SlakeBatch(
-                pond=p1,
-                started_at=now - timedelta(hours=6),
-                target_temp_c=85.0,
-                peak_temp_c=72.0,
-                notes="峰值已过，可出灰",
-            ),
-            SlakeBatch(
-                pond=p2,
-                started_at=now - timedelta(hours=2),
-                target_temp_c=80.0,
-                peak_temp_c=None,
-                notes="注水中，尚未测得峰值",
-            ),
-            SlakeBatch(
-                pond=p3,
-                started_at=now - timedelta(days=1),
-                target_temp_c=82.0,
-                peak_temp_c=91.0,
-                notes="已出灰批次",
-            ),
-            SlakeBatch(
-                pond=p4,
-                started_at=now - timedelta(hours=9),
-                target_temp_c=84.0,
-                peak_temp_c=66.0,
-                notes="熟化中段",
-            ),
-            SlakeBatch(
-                pond=p5,
-                started_at=now - timedelta(hours=1),
-                target_temp_c=80.0,
-                peak_temp_c=None,
-                notes="刚开池注水",
-            ),
-            SlakeBatch(
-                pond=p6,
-                started_at=now - timedelta(days=2),
-                target_temp_c=83.0,
-                peak_temp_c=88.0,
-                notes="东侧池已出灰",
-            ),
-        ]
-    )
+    if Plant.query.filter_by(name="西山石灰厂").first() is None:
+        plant2 = Plant(name="西山石灰厂", location="矿区东侧", notes="跨厂对照第二厂区")
+        db.session.add(plant2)
+        db.session.flush()
+
+        x1 = Pond(plant=plant2, code="X-01", status=Pond.STATUS_SLAKING, capacity_m3=46.0)
+        x2 = Pond(plant=plant2, code="X-02", status=Pond.STATUS_FILLING, capacity_m3=34.0)
+        x3 = Pond(plant=plant2, code="X-03", status=Pond.STATUS_DRAWN, capacity_m3=52.0)
+        x4 = Pond(plant=plant2, code="X-04", status=Pond.STATUS_SLAKING, capacity_m3=40.0)
+        x5 = Pond(plant=plant2, code="X-05", status=Pond.STATUS_FILLING, capacity_m3=38.0)
+        db.session.add_all([x1, x2, x3, x4, x5])
+        db.session.flush()
+
+        now = utcnow()
+        db.session.add_all(
+            [
+                SlakeBatch(
+                    pond=x1,
+                    started_at=now - timedelta(hours=5),
+                    target_temp_c=84.0,
+                    peak_temp_c=70.0,
+                    notes="午班熟化中",
+                ),
+                SlakeBatch(
+                    pond=x2,
+                    started_at=now - timedelta(hours=1),
+                    target_temp_c=80.0,
+                    peak_temp_c=None,
+                    notes="注水初期",
+                ),
+                SlakeBatch(
+                    pond=x3,
+                    started_at=now - timedelta(days=2),
+                    target_temp_c=83.0,
+                    peak_temp_c=90.0,
+                    notes="已出灰清池",
+                ),
+                SlakeBatch(
+                    pond=x4,
+                    started_at=now - timedelta(hours=8),
+                    target_temp_c=82.0,
+                    peak_temp_c=63.0,
+                    notes="接近出灰阈值",
+                ),
+                SlakeBatch(
+                    pond=x5,
+                    started_at=now - timedelta(hours=3),
+                    target_temp_c=80.0,
+                    peak_temp_c=None,
+                    notes="注水中",
+                ),
+            ]
+        )
+
     db.session.commit()

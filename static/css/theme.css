@@ -420,6 +420,21 @@ button:hover, .btn:hover { background: #1e293b; }
 }
 .actions { display: flex; gap: 10px; align-items: center; }
 
+/* Cross-plant read-only compare board */
+.compare-page { max-width: 1100px; }
+.compare-table td.num, .compare-table th.num { text-align: center; }
+.compare-table .badge {
+  min-width: 2.4em;
+  font-weight: 700;
+  text-align: center;
+}
+.compare-table tfoot .compare-total td {
+  background: #e2e8f0;
+  color: var(--slate-deep);
+  font-weight: 800;
+  border-top: 2px solid var(--border);
+}
+
 @media (max-width: 720px) {
   .topbar, .ops-main { padding-left: 16px; padding-right: 16px; }
   .floor-head { flex-direction: column; }
